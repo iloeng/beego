@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
@@ -194,7 +193,7 @@ func (srv *Server) ListenMutualTLS(certFile string, keyFile string, trustFile st
 	srv.TLSConfig.Certificates[0] = cert
 	srv.TLSConfig.ClientAuth = tls.RequireAndVerifyClientCert
 	pool := x509.NewCertPool()
-	data, err := ioutil.ReadFile(trustFile)
+	data, err := os.ReadFile(trustFile)
 	if err != nil {
 		log.Println(err)
 		return nil, err
@@ -339,15 +338,15 @@ func (srv *Server) fork() (err error) {
 	var args []string
 	if len(os.Args) > 1 {
 		for _, arg := range os.Args[1:] {
-			if arg == "-graceful" {
+			if strings.TrimLeft(arg, "-") == "graceful" {
 				break
 			}
 			args = append(args, arg)
 		}
 	}
-	args = append(args, "-graceful")
+	args = append(args, "--graceful")
 	if len(runningServers) > 1 {
-		args = append(args, fmt.Sprintf(`-socketorder=%s`, strings.Join(orderArgs, ",")))
+		args = append(args, fmt.Sprintf(`--socketorder=%s`, strings.Join(orderArgs, ",")))
 		log.Println(args)
 	}
 	cmd := exec.Command(path, args...)

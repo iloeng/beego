@@ -312,19 +312,17 @@ func (c *Controller) RenderBytes() ([]byte, error) {
 	if err == nil && c.Layout != "" {
 		c.Data["LayoutContent"] = template.HTML(buf.String())
 
-		if c.LayoutSections != nil {
-			for sectionName, sectionTpl := range c.LayoutSections {
-				if sectionTpl == "" {
-					c.Data[sectionName] = ""
-					continue
-				}
-				buf.Reset()
-				err = ExecuteViewPathTemplate(&buf, sectionTpl, c.viewPath(), c.Data)
-				if err != nil {
-					return nil, err
-				}
-				c.Data[sectionName] = template.HTML(buf.String())
+		for sectionName, sectionTpl := range c.LayoutSections {
+			if sectionTpl == "" {
+				c.Data[sectionName] = ""
+				continue
 			}
+			buf.Reset()
+			err = ExecuteViewPathTemplate(&buf, sectionTpl, c.viewPath(), c.Data)
+			if err != nil {
+				return nil, err
+			}
+			c.Data[sectionName] = template.HTML(buf.String())
 		}
 
 		buf.Reset()
@@ -345,13 +343,11 @@ func (c *Controller) renderTemplate() (bytes.Buffer, error) {
 		buildFiles := []string{c.TplName}
 		if c.Layout != "" {
 			buildFiles = append(buildFiles, c.Layout)
-			if c.LayoutSections != nil {
-				for _, sectionTpl := range c.LayoutSections {
-					if sectionTpl == "" {
-						continue
-					}
-					buildFiles = append(buildFiles, sectionTpl)
+			for _, sectionTpl := range c.LayoutSections {
+				if sectionTpl == "" {
+					continue
 				}
+				buildFiles = append(buildFiles, sectionTpl)
 			}
 		}
 		BuildTemplate(c.viewPath(), buildFiles...)
@@ -635,31 +631,33 @@ func (c *Controller) GetFile(key string) (multipart.File, *multipart.FileHeader,
 
 // GetFiles return multi-upload files
 // files, err:=c.GetFiles("myfiles")
+//
 //	if err != nil {
 //		http.Error(w, err.Error(), http.StatusNoContent)
 //		return
 //	}
-// for i, _ := range files {
-//	//for each fileheader, get a handle to the actual file
-//	file, err := files[i].Open()
-//	defer file.Close()
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
+//
+//	for i, _ := range files {
+//		//for each fileheader, get a handle to the actual file
+//		file, err := files[i].Open()
+//		defer file.Close()
+//		if err != nil {
+//			http.Error(w, err.Error(), http.StatusInternalServerError)
+//			return
+//		}
+//		//create destination file making sure the path is writeable.
+//		dst, err := os.Create("upload/" + files[i].Filename)
+//		defer dst.Close()
+//		if err != nil {
+//			http.Error(w, err.Error(), http.StatusInternalServerError)
+//			return
+//		}
+//		//copy the uploaded file to the destination file
+//		if _, err := io.Copy(dst, file); err != nil {
+//			http.Error(w, err.Error(), http.StatusInternalServerError)
+//			return
+//		}
 //	}
-//	//create destination file making sure the path is writeable.
-//	dst, err := os.Create("upload/" + files[i].Filename)
-//	defer dst.Close()
-//	if err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-//	//copy the uploaded file to the destination file
-//	if _, err := io.Copy(dst, file); err != nil {
-//		http.Error(w, err.Error(), http.StatusInternalServerError)
-//		return
-//	}
-// }
 func (c *Controller) GetFiles(key string) ([]*multipart.FileHeader, error) {
 	if files, ok := c.Ctx.Request.MultipartForm.File[key]; ok {
 		return files, nil
